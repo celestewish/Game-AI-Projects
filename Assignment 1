@@ -15,5 +15,14 @@ else if (!result){
 }
 
 Sudoku Method:
-
+    generate and print sudoku board
+    while (!fullBoard || mistakes < 3){
+        System.out.println("Select row");
+        int row = sc.input();
+        System.out.println("Select column");
+        int column = sc.input()
+        (loop that fills out sudoku board according to the user's inputs)
+        (if a cell already has a number that the player included, mistakes++)
+        (print sudoku board)
+    }
  */
