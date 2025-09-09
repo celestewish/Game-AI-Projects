@@ -1,0 +1,19 @@
+/*
+Assignment 1
+Pseudocode:
+Main Method:
+boolean winGame = false;
+boolean loseGame = false;
+boolean result = false;
+System.out.println("Hello! Welcome to sudoku! Starting game...");
+result = sudoku();
+if (result){
+    System.out.println("Congrats! You won!");
+}
+else if (!result){
+    System.out.println("You'll get them next time!");
+}
+
+Sudoku Method:
+
+ */
