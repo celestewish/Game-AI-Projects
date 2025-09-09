@@ -8,21 +8,24 @@ boolean result = false;
 System.out.println("Hello! Welcome to sudoku! Starting game...");
 result = sudoku();
 if (result){
-    System.out.println("Congrats! You won!");
+    System.out.println("AI won!");
 }
 else if (!result){
-    System.out.println("You'll get them next time!");
+    System.out.println("AI lost!");
 }
 
 Sudoku Method:
     generate and print sudoku board
     while (!fullBoard || mistakes < 3){
-        System.out.println("Select row");
-        int row = sc.input();
-        System.out.println("Select column");
-        int column = sc.input()
-        (loop that fills out sudoku board according to the user's inputs)
-        (if a cell already has a number that the player included, mistakes++)
+        if (no slots left){
+            fullBoard = true;
+            break;
+        }
+        (picks empty cell based on which area has the least general slots filled
+        then the ai looks to see which numbers havent been filled yet
+        the ai then fills the slots with the numbers it has decided)
+        (if a cell already has a number that the ai included, mistakes++)
         (print sudoku board)
     }
+    return fullBoard;
  */
