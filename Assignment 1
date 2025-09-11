@@ -29,3 +29,85 @@ Sudoku Method:
     }
     return fullBoard;
  */
+package sudoku;
+
+import java.util.Arrays;
+
+public class Board implements Cloneable {
+    public static final int N = 9;
+    private final int[][] grid = new int[N][N]; // 0 = empty, 1..9 otherwise
+
+    // --- Constructors / I/O ---
+    public static Board fromString(String s) {
+        // s: 81 chars of '0'..'9' or '.' (dot = blank)
+        Board b = new Board();
+        int idx = 0;
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
+                char ch = s.charAt(idx++);
+                int v = (ch == '.' ? 0 : Character.digit(ch, 10));
+                b.grid[r][c] = (v >= 0 ? v : 0);
+            }
+        }
+        return b;
+    }
+
+    public String toOneLine() {
+        StringBuilder sb = new StringBuilder(81);
+        for (int[] row : grid)
+            for (int v : row) sb.append(v == 0 ? '.' : (char) ('0' + v));
+        return sb.toString();
+    }
+
+    public String pretty() {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 0; r < N; r++) {
+            if (r % 3 == 0) sb.append("+-------+-------+-------+\n");
+            for (int c = 0; c < N; c++) {
+                if (c % 3 == 0) sb.append("| ");
+                sb.append(grid[r][c] == 0 ? ". " : (grid[r][c] + " "));
+            }
+            sb.append("|\n");
+        }
+        sb.append("+-------+-------+-------+\n");
+        return sb.toString();
+    }
+
+    // --- Basic accessors ---
+    public int get(int r, int c) { return grid[r][c]; }
+    public void set(int r, int c, int v) { grid[r][c] = v; }
+    public boolean isSolved() {
+        for (int[] row : grid) for (int v : row) if (v == 0) return false;
+        return true;
+    }
+
+    // --- Utilities: bitmasks for candidates ---
+    // We'll represent a set of digits 1..9 as a 9-bit mask. bit0=1 means digit 1 allowed, bit8=1 means digit 9 allowed.
+    public static int digitToBit(int d) { return 1 << (d - 1); }
+    public static int allDigitsMask() { return 0x1FF; } // 9 bits set
+
+    public static int countBits(int mask) { return Integer.bitCount(mask); }
+    public static int firstDigitFromMask(int mask) {
+        int idx = Integer.numberOfTrailingZeros(mask);
+        return idx + 1; // since digit 1 sits at bit0
+    }
+
+    // TODO (YOU): rowMask, colMask, boxMask, candidatesMask
+    // Hints:
+    // - A "used mask" contains bits for digits already present in that unit.
+    // - A "candidates mask" for (r,c) is: allDigitsMask() & ~usedByRow & ~usedByCol & ~usedByBox
+    public int rowUsedMask(int r) { /* TODO */ return 0; }
+    public int colUsedMask(int c) { /* TODO */ return 0; }
+    public int boxUsedMask(int r, int c) { /* TODO */ return 0; }
+    public int candidatesMask(int r, int c) {
+        if (grid[r][c] != 0) return digitToBit(grid[r][c]);
+        /* TODO: return allowed mask for this empty cell */
+        return 0;
+    }
+
+    @Override public Board clone() {
+        Board b = new Board();
+        for (int r = 0; r < N; r++) b.grid[r] = Arrays.copyOf(grid[r], N);
+        return b;
+    }
+}
