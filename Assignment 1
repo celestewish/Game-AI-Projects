@@ -29,85 +29,238 @@ Sudoku Method:
     }
     return fullBoard;
  */
-package sudoku;
+public class Main{
+    static final int N = 9;
+    public static void main (String[] args){
+        System.out.println("Hello! Welcome to sudoku! Starting game...");
+        result = sudoku();
+        if (result){
+            System.out.println("AI Won.");
+        }
+        else if (!result){
+            System.out.println("AI lost.");
+        }
+    }
 
-import java.util.Arrays;
+    public boolean sudoku(){
+        int[][] board = {
+            {3, 0, 6, 5, 0, 8, 4, 0, 0},
+            {5, 2, 0, 0, 0, 0, 0, 0, 0},
+            {0, 8, 7, 0, 0, 0, 0, 3, 1},
+            {0, 0, 3, 0, 1, 0, 0, 8, 0},
+            {9, 0, 0, 8, 6, 3, 0, 0, 5},
+            {0, 5, 0, 0, 9, 0, 6, 0, 0},
+            {1, 3, 0, 0, 0, 0, 2, 5, 0},
+            {0, 0, 0, 0, 0, 0, 0, 7, 4},
+            {0, 0, 5, 2, 0, 6, 3, 0, 0}
+        };
 
-public class Board implements Cloneable {
-    public static final int N = 9;
-    private final int[][] grid = new int[N][N]; // 0 = empty, 1..9 otherwise
+        int mistakes = 0;
+        boolean changed;
 
-    // --- Constructors / I/O ---
-    public static Board fromString(String s) {
-        // s: 81 chars of '0'..'9' or '.' (dot = blank)
-        Board b = new Board();
-        int idx = 0;
-        for (int r = 0; r < N; r++) {
-            for (int c = 0; c < N; c++) {
-                char ch = s.charAt(idx++);
-                int v = (ch == '.' ? 0 : Character.digit(ch, 10));
-                b.grid[r][c] = (v >= 0 ? v : 0);
+        do{
+            if (isFull(board) || mistakes >= 3){
+                break;
+            }
+
+            Unit densest = findDensestUnit(board);
+            if (densest == null) break;
+
+            changed = (densest.type == UnitType.ROW) ? fillHiddenSinglesInRow(board, densest.index) : fillHiddenSinglesInCol(board, densist.index);
+
+            if (!changed){
+                //read todos
+                break;
+            }
+
+            printBoard(board);
+        } while (changed);
+        return isFull(board);
+    }
+
+    enum UnitType {ROW, COL}
+
+    static class Unit{
+        final UnitType type;
+        final int index;
+        Unit(UnitType t, int i) {this.type = t; this.index = i;}
+    }
+
+    static Unit findDensestUnit(int[][] board){
+        int bestCount = -1;
+        Unit best = null;
+
+        //rows
+        for (int r = 0; r < N; r++){
+            int filled = countFilledRow(board, r);
+            if (filled > bestCount && filled < N){
+                bestCount = filled;
+                best = new Unit(UnitType.ROW, r);
             }
         }
-        return b;
-    }
-
-    public String toOneLine() {
-        StringBuilder sb = new StringBuilder(81);
-        for (int[] row : grid)
-            for (int v : row) sb.append(v == 0 ? '.' : (char) ('0' + v));
-        return sb.toString();
-    }
-
-    public String pretty() {
-        StringBuilder sb = new StringBuilder();
-        for (int r = 0; r < N; r++) {
-            if (r % 3 == 0) sb.append("+-------+-------+-------+\n");
-            for (int c = 0; c < N; c++) {
-                if (c % 3 == 0) sb.append("| ");
-                sb.append(grid[r][c] == 0 ? ". " : (grid[r][c] + " "));
+        //cols
+        for (int c = 0; c < N; c++){
+            int filled = countFilledCol(board, c);
+            if (filled > bestCount && filled < N){
+                bestCount = filled;
+                best = new Unit(UnitType.COL, c);
             }
-            sb.append("|\n");
         }
-        sb.append("+-------+-------+-------+\n");
-        return sb.toString();
+        return best;
     }
 
-    // --- Basic accessors ---
-    public int get(int r, int c) { return grid[r][c]; }
-    public void set(int r, int c, int v) { grid[r][c] = v; }
-    public boolean isSolved() {
-        for (int[] row : grid) for (int v : row) if (v == 0) return false;
+    static int countFilledRow(int[][] b, int r){
+        int cnt = 0;
+        for (int c = 0; c < N; c++){
+            if (b[r][c] != 0){
+                cnt++;
+            }
+        }
+    }
+
+    static int countFilledCol(int[][] b, int c){
+        int cnt = 0;
+        for (int r = 0; r < N; r++){
+            if (b[r][c] != 0){
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
+    static boolean fillHiddenSinglesInRow(int[][] b, int r){
+        boolean changed = false;
+        boolean[] present = new boolean[10];
+        int[] empties = new int[N];
+        int emptiesCount = 0;
+
+        for (int c = 0; c < N; c++){
+            int v = b[r][c];
+            if (v == 0){
+                empties[emptiesCount++] = c;
+            }
+            else{
+                present[v] = true;
+            }
+        }
+
+        if (emptiesCount == 0){
+            return false;
+        }
+
+        for (int d = 1; d <= 9; d++){
+            if (present[d]){
+                continue;
+            }
+            int onlyCol = -1, places = 0;
+
+            for (int i = 0; i < emptiesCount; i++){
+                int c = empties[i];
+                if (isCandidate(b,r,c,d)){
+                    places++;
+                    onlyCol = c;
+                    if (places > 1){
+                        break;
+                    }
+                }
+            }
+            if (places == 1){
+                b[r][onlyCol] = d;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    static boolean fillHiddenSinglesInCol(int[][] b, int c){
+        boolean changed = false;
+        boolean[] present = new boolean[10];
+        int[] empties = new int[N];
+        int emptiesCount = 0;
+
+        for (int r = 0; r < N; r++){
+            int v = b[r][c];
+            if (v == 0){
+                empties[emptiesCount++] = r;
+            }
+            else{
+                present[v] = true;
+            }
+        }
+
+        if (emptiesCount == 0){
+            return false;
+        }
+
+        for (int d = 1; d <= 9; d++){
+            if (present[d]){
+                continue;
+            }
+            int onlyCol = -1, places = 0;
+
+            for (int i = 0; i < emptiesCount; i++){
+                int c = empties[i];
+                if (isCandidate(b,r,c,d)){
+                    places++;
+                    onlyRow = r;
+                    if (places > 1){
+                        break;
+                    }
+                }
+            }
+            if (places == 1){
+                b[onlyRow][c] = d;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    static boolean isCandidate(int[][] b, int r, int c, int d){
+        if (b[r][c] != 0){
+            return false
+        }
+
+        //row
+        for (int cc = 0; cc < N; cc++){
+            if (b[r][cc] == d){
+                return false
+            }
+        }
+        //col
+        for (int rr = 0; rr < N; rr++){
+            if (b[rr][c] == d){
+                return false
+            }
+        }
+        //board
+        int br = (r / 3) * 3
+        bc = (c / 3) * 3;
+        for (int rr = br; rr < br + 3; rr++){
+            for (int cc = bc; cc < bc + 3; cc++){
+                if (b[rr][cc] == d){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    static boolean isFull(int[][] b) {
+        for (int r = 0; r < N; r++)
+            for (int c = 0; c < N; c++)
+                if (b[r][c] == 0) return false;
         return true;
     }
 
-    // --- Utilities: bitmasks for candidates ---
-    // We'll represent a set of digits 1..9 as a 9-bit mask. bit0=1 means digit 1 allowed, bit8=1 means digit 9 allowed.
-    public static int digitToBit(int d) { return 1 << (d - 1); }
-    public static int allDigitsMask() { return 0x1FF; } // 9 bits set
-
-    public static int countBits(int mask) { return Integer.bitCount(mask); }
-    public static int firstDigitFromMask(int mask) {
-        int idx = Integer.numberOfTrailingZeros(mask);
-        return idx + 1; // since digit 1 sits at bit0
-    }
-
-    // TODO (YOU): rowMask, colMask, boxMask, candidatesMask
-    // Hints:
-    // - A "used mask" contains bits for digits already present in that unit.
-    // - A "candidates mask" for (r,c) is: allDigitsMask() & ~usedByRow & ~usedByCol & ~usedByBox
-    public int rowUsedMask(int r) { /* TODO */ return 0; }
-    public int colUsedMask(int c) { /* TODO */ return 0; }
-    public int boxUsedMask(int r, int c) { /* TODO */ return 0; }
-    public int candidatesMask(int r, int c) {
-        if (grid[r][c] != 0) return digitToBit(grid[r][c]);
-        /* TODO: return allowed mask for this empty cell */
-        return 0;
-    }
-
-    @Override public Board clone() {
-        Board b = new Board();
-        for (int r = 0; r < N; r++) b.grid[r] = Arrays.copyOf(grid[r], N);
-        return b;
+    static void printBoard(int[][] b) {
+        System.out.println("+-------+-------+-------+");
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
+                if (c % 3 == 0) System.out.print("| ");
+                System.out.print((b[r][c] == 0 ? ". " : (b[r][c] + " ")));
+            }
+            System.out.println("|");
+            if (r % 3 == 2) System.out.println("+-------+-------+-------+");
+        }
     }
 }
