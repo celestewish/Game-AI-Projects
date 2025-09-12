@@ -78,13 +78,88 @@ public class Main{
         return isFull(board);
     }
 
-    enum UnitType {ROW, COL}
+    enum UnitType {ROW, COL, BOX}
+
+    static int boxRowStart(int box) { return (box / 3) * 3; }
+static int boxColStart(int box) { return (box % 3) * 3; }
+
+static int countFilledBox(int[][] b, int box) {
+    int br = boxRowStart(box), bc = boxColStart(box);
+    int cnt = 0;
+    for (int r = br; r < br + 3; r++)
+        for (int c = bc; c < bc + 3; c++)
+            if (b[r][c] != 0) cnt++;
+    return cnt;
+}
+
 
     static class Unit{
         final UnitType type;
         final int index;
         Unit(UnitType t, int i) {this.type = t; this.index = i;}
     }
+
+    static class UnitCount{
+        final Unit unit;
+        final int filled;
+        UnitCount(Unit u, int f){
+            unit = u;
+            filled = f;
+        }
+    }
+
+    static java.util.List<UnitCount> unitsByDensity(int[][] b) {
+    java.util.List<UnitCount> list = new java.util.ArrayList<>();
+    // rows
+    for (int r = 0; r < N; r++) {
+        int filled = countFilledRow(b, r);
+        if (filled < N) list.add(new UnitCount(new Unit(UnitType.ROW, r), filled));
+    }
+    // cols
+    for (int c = 0; c < N; c++) {
+        int filled = countFilledCol(b, c);
+        if (filled < N) list.add(new UnitCount(new Unit(UnitType.COL, c), filled));
+    }
+    // after rows and cols
+    for (int box = 0; box < 9; box++) {
+        int filled = countFilledBox(b, box);
+        if (filled < N) list.add(new UnitCount(new Unit(UnitType.BOX, box), filled));
+    }
+    list.sort((a, b2) -> Integer.compare(b2.filled, a.filled));
+    return list;
+}
+
+static boolean workOneUnit(int[][] board, Unit u) {
+    switch (u.type) {
+        case ROW: return fillHiddenSinglesInRow(board, u.index);
+        case COL: return fillHiddenSinglesInCol(board, u.index);
+        default:  return false;
+    }
+}
+
+boolean changedOverall;
+do {
+    if (isFull(board) || mistakes >= 3) break;
+
+    java.util.List<UnitCount> ranked = unitsByDensity(board);
+    if (ranked.isEmpty()) break;
+
+    changedOverall = false;
+    int K = Math.min(3, ranked.size()); // try top 3 units each pass
+    for (int i = 0; i < K; i++) {
+        Unit u = ranked.get(i).unit;
+        boolean changed = workOneUnit(board, u);
+        if (changed) {
+            changedOverall = true;
+            printBoard(board);
+            break; // end this pass; rebuild ranks next loop
+        }
+    }
+
+    // if top-K didn’t change anything, you’ll add more tactics in TODO 2
+} while (changedOverall);
+
+
 
     static Unit findDensestUnit(int[][] board){
         int bestCount = -1;
@@ -127,6 +202,84 @@ public class Main{
         }
         return cnt;
     }
+
+    static boolean fillNakedSinglesInRow(int[][] b, int r) {
+    boolean changed = false;
+    // repeat because placing one digit can create new naked singles in the same row
+    boolean progress;
+    do {
+        progress = false;
+        for (int c = 0; c < N; c++) {
+            if (b[r][c] != 0) continue;
+            int lastDigit = -1, count = 0;
+            for (int d = 1; d <= 9; d++) {
+                if (isCandidate(b, r, c, d)) {
+                    count++;
+                    lastDigit = d;
+                    if (count > 1) break;
+                }
+            }
+            if (count == 1) {
+                b[r][c] = lastDigit;
+                progress = true;
+                changed = true;
+            }
+        }
+    } while (progress);
+    return changed;
+}
+
+static boolean fillNakedSinglesInCol(int[][] b, int c) {
+    boolean changed = false;
+    boolean progress;
+    do {
+        progress = false;
+        for (int r = 0; r < N; r++) {
+            if (b[r][c] != 0) continue;
+            int lastDigit = -1, count = 0;
+            for (int d = 1; d <= 9; d++) {
+                if (isCandidate(b, r, c, d)) {
+                    count++;
+                    lastDigit = d;
+                    if (count > 1) break;
+                }
+            }
+            if (count == 1) {
+                b[r][c] = lastDigit;
+                progress = true;
+                changed = true;
+            }
+        }
+    } while (progress);
+    return changed;
+}
+
+static boolean fillNakedSinglesInBox(int[][] b, int box) {
+    boolean changed = false, progress;
+    int br = boxRowStart(box), bc = boxColStart(box);
+    do {
+        progress = false;
+        for (int r = br; r < br + 3; r++) {
+            for (int c = bc; c < bc + 3; c++) {
+                if (b[r][c] != 0) continue;
+                int last = -1, count = 0;
+                for (int d = 1; d <= 9; d++) {
+                    if (isCandidate(b, r, c, d)) {
+                        count++; last = d;
+                        if (count > 1) break;
+                    }
+                }
+                if (count == 1) {
+                    b[r][c] = last;
+                    progress = true; changed = true;
+                }
+            }
+        }
+    } while (progress);
+    return changed;
+}
+
+
 
     static boolean fillHiddenSinglesInRow(int[][] b, int r){
         boolean changed = false;
@@ -215,6 +368,61 @@ public class Main{
         }
         return changed;
     }
+
+    static boolean fillHiddenSinglesInBox(int[][] b, int box) {
+    boolean changed = false;
+    boolean[] present = new boolean[10];
+    java.util.List<int[]> empties = new java.util.ArrayList<>();
+
+    int br = boxRowStart(box), bc = boxColStart(box);
+    for (int r = br; r < br + 3; r++) {
+        for (int c = bc; c < bc + 3; c++) {
+            int v = b[r][c];
+            if (v == 0) empties.add(new int[]{r,c}); else present[v] = true;
+        }
+    }
+    if (empties.isEmpty()) return false;
+
+    for (int d = 1; d <= 9; d++) {
+        if (present[d]) continue;
+        int[] only = null; int places = 0;
+        for (int[] rc : empties) {
+            int r = rc[0], c = rc[1];
+            if (isCandidate(b, r, c, d)) {
+                places++; only = rc;
+                if (places > 1) break;
+            }
+        }
+        if (places == 1) {
+            b[only[0]][only[1]] = d;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+
+    static boolean workOneUnit(int[][] board, Unit u) {
+    boolean changed = false;
+    switch (u.type) {
+        case ROW:
+            changed = fillHiddenSinglesInRow(board, u.index);
+            if (!changed) changed = fillNakedSinglesInRow(board, u.index);
+            return changed;
+        case COL:
+            changed = fillHiddenSinglesInCol(board, u.index);
+            if (!changed) changed = fillNakedSinglesInCol(board, u.index);
+            return changed;
+        case BOX:
+            changed = fillHiddenSinglesInBox(board, u.index);
+            if (!changed) changed = fillNakedSinglesInBox(board, u.index);
+            return changed;
+        default:
+            return false;
+    }
+}
+
+
 
     static boolean isCandidate(int[][] b, int r, int c, int d){
         if (b[r][c] != 0){
