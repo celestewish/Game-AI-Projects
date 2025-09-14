@@ -37,7 +37,7 @@ public class Assignment1 {
             System.out.println("No file provided; using built-in DEFAULT_BOARD.");
         }
 
-        boolean result = sudoku(board);   // <-- pass the board in now
+        boolean result = sudoku(board);
         if (result){
             System.out.println("AI Won.");
         } else {
@@ -50,7 +50,6 @@ public class Assignment1 {
 
     public static boolean sudoku(int[][] board) {
 
-        int mistakes = 0;
         printBoard(board);
 
         boolean changedOverall;
@@ -68,7 +67,7 @@ public class Assignment1 {
                 if (workOneUnit(board, u)) {
                     changedOverall = true;
                     printBoard(board);
-                    break; // re-rank next loop
+                    break;
                 }
             }
 
@@ -78,7 +77,7 @@ public class Assignment1 {
                     if (workOneUnit(board, u)) {
                         changedOverall = true;
                         printBoard(board);
-                        break; // re-rank next loop
+                        break;
                     }
                 }
             }
