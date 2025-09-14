@@ -3,7 +3,7 @@ import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Scanner;
 
-public class Main {
+public class Assignment1 {
     static final int N = 9;
 
     static final int[][] DEFAULT_BOARD = {
